@@ -51,16 +51,24 @@ const pdfJob = z.object({ id, documentId: id, documentHash: hash, layoutVersion:
   targets: z.array(z.object({ paragraphId: id, sourceHash: hash, status: z.enum(['pending', 'running', 'translated', 'failed']), error: str.optional(),
     parts: z.array(z.object({ start: z.number().int().nonnegative(), end: z.number().int().positive(), result: ai.optional() })).min(1).max(10000) })).min(1).max(100000),
   status: z.enum(['pending', 'running', 'paused', 'partial', 'failed', 'complete']), error: str.optional(), createdAt: z.string().max(100), updatedAt: z.string().max(100) });
-export const workspaceSchema = legacyWorkspaceSchema.extend({
+const workspaceV2Schema = legacyWorkspaceSchema.extend({
   schemaVersion: z.literal(2), pdfLayouts: z.array(pdfLayout).max(100000), pdfParagraphs: z.array(pdfParagraph).max(100000),
   pdfTranslations: z.array(pdfTranslation).max(100000), pdfTranslationJobs: z.array(pdfJob).max(1000),
 });
+const inkPoint = point.extend({ pressure: z.number().min(0).max(1).optional() });
+const inkStroke = z.object({ id, color: z.enum(['black', 'blue', 'green', 'red']), width: z.number().positive().max(40),
+  points: z.array(inkPoint).min(1).max(100000), createdAt: z.string().max(100), updatedAt: z.string().max(100) });
+export const workspaceSchema = workspaceV2Schema.extend({ schemaVersion: z.literal(3), inkStrokes: z.array(inkStroke).max(10000) });
 export function validateWorkspace(value: unknown): Workspace {
-  const w = value && typeof value === 'object' && 'schemaVersion' in value && value.schemaVersion === 1
-    ? { ...legacyWorkspaceSchema.parse(value), schemaVersion: 2 as const, pdfLayouts: [], pdfParagraphs: [], pdfTranslations: [], pdfTranslationJobs: [] }
-    : workspaceSchema.parse(value);
+  const version = value && typeof value === 'object' && 'schemaVersion' in value ? value.schemaVersion : undefined;
+  const w = version === 1
+    ? { ...legacyWorkspaceSchema.parse(value), schemaVersion: 3 as const, pdfLayouts: [], pdfParagraphs: [], pdfTranslations: [], pdfTranslationJobs: [], inkStrokes: [] }
+    : version === 2
+      ? { ...workspaceV2Schema.parse(value), schemaVersion: 3 as const, inkStrokes: [] }
+      : workspaceSchema.parse(value);
   const docs = new Map(w.documents.map(d => [d.id, d])); const notes = new Map(w.notes.map(n => [n.id, n])); const highlights = new Map(w.highlights.map(h => [h.id, h]));
-  if (docs.size !== w.documents.length || notes.size !== w.notes.length || highlights.size !== w.highlights.length || new Set(w.edges.map(e => e.id)).size !== w.edges.length) throw new Error('封裝包含重複 ID。');
+  if (docs.size !== w.documents.length || notes.size !== w.notes.length || highlights.size !== w.highlights.length || new Set(w.edges.map(e => e.id)).size !== w.edges.length
+    || new Set(w.inkStrokes.map(stroke => stroke.id)).size !== w.inkStrokes.length) throw new Error('封裝包含重複 ID。');
   if (w.activeDocumentId && !docs.has(w.activeDocumentId)) throw new Error('封裝的目前文件不存在。');
   for (const d of docs.values()) if (d.pages.length !== d.pageCount) throw new Error('PDF 頁數與文字索引不一致。');
   for (const h of w.highlights) {
@@ -178,7 +186,7 @@ async function exportPackTask() {
   const w = portableWorkspace(); const zip = new JSZip();
   const images = [...new Map(w.notes.flatMap(n => n.screenshot ? [[n.screenshot.assetId, n.screenshot] as const] : [])).values()];
   if (w.documents.reduce((sum, d) => sum + d.size, 0) + images.reduce((sum, image) => sum + image.size, 0) + new Blob([JSON.stringify(w)]).size > 300 * 1024 * 1024) throw new Error('完整研究封裝超過 300 MB 上限，請先減少文獻或截圖。');
-  zip.file('manifest.json', JSON.stringify({ schemaVersion: 2, app: 'PaperReader', workspace: w.title, exportedAt: now(), documents: w.documents.map(d => ({ id: d.id, name: d.name, sha256: d.sha256, file: `documents/${d.id}.pdf` })), images: images.map(image => ({ id: image.assetId, sha256: image.sha256, size: image.size, width: image.width, height: image.height, file: `images/${image.assetId}.png` })) }, null, 2));
+  zip.file('manifest.json', JSON.stringify({ schemaVersion: 3, app: 'PaperReader', workspace: w.title, exportedAt: now(), documents: w.documents.map(d => ({ id: d.id, name: d.name, sha256: d.sha256, file: `documents/${d.id}.pdf` })), images: images.map(image => ({ id: image.assetId, sha256: image.sha256, size: image.size, width: image.width, height: image.height, file: `images/${image.assetId}.png` })) }, null, 2));
   zip.file('annotations.json', JSON.stringify(w));
   for (const d of w.documents) {
     const stored = await db.documents.get([projectId, d.id]); if (!stored) throw new Error(`缺少 ${d.name} 的 PDF 檔案，請重新匯入 PDF 後再備份。`);
@@ -218,7 +226,7 @@ export async function readImport(file: File): Promise<ImportedPack> {
   const manifestFile = zip.file('manifest.json'); const annotations = zip.file('annotations.json');
   if (!manifestFile || !annotations) throw new Error('缺少 manifest.json 或 annotations.json。');
   const manifest = JSON.parse(await manifestFile.async('string'));
-  if (![1, 2].includes(manifest.schemaVersion) || manifest.app !== 'PaperReader') throw new Error('這個研究封裝版本不受支援。');
+  if (![1, 2, 3].includes(manifest.schemaVersion) || manifest.app !== 'PaperReader') throw new Error('這個研究封裝版本不受支援。');
   const source = JSON.parse(await annotations.async('string'));
   if (source.schemaVersion !== manifest.schemaVersion) throw new Error('研究封裝版本不一致。');
   const workspace = await validateSourceHashes(validateWorkspace(source));

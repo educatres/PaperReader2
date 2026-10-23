@@ -1,6 +1,6 @@
 import { now, type Workspace } from '../types';
 
-export const collections = ['documents', 'notes', 'highlights', 'edges', 'jobs', 'pdfLayouts', 'pdfParagraphs', 'pdfTranslations', 'pdfTranslationJobs'] as const;
+export const collections = ['documents', 'notes', 'highlights', 'edges', 'inkStrokes', 'jobs', 'pdfLayouts', 'pdfParagraphs', 'pdfTranslations', 'pdfTranslationJobs'] as const;
 type Collection = typeof collections[number];
 export interface Patch { collection: Collection | 'workspace'; id?: string; field?: string; before?: unknown; after?: unknown }
 export interface Change { id: string; projectId: string; epoch: string; patches: Patch[] }

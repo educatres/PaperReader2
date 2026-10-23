@@ -8,6 +8,12 @@ export const reasoningLabels: Record<ReasoningEffort, string> = { low: '低', me
 export type Point = { x: number; y: number };
 export type Quad = Point & { width: number; height: number };
 export type Viewport = Point & { zoom: number };
+export type InkColor = 'black' | 'blue' | 'green' | 'red';
+export interface InkPoint extends Point { pressure?: number }
+export interface InkStroke {
+  id: string; color: InkColor; width: number; points: InkPoint[];
+  createdAt: string; updatedAt: string;
+}
 export interface Paper {
   id: string; name: string; sha256: string; size: number; pageCount: number;
   pages: string[]; createdAt: string;
@@ -86,14 +92,14 @@ export interface PdfTranslationJob {
   error?: string; createdAt: string; updatedAt: string;
 }
 export interface Workspace {
-  schemaVersion: 2; id: string; title: string; documents: Paper[]; activeDocumentId?: string;
-  highlights: Highlight[]; notes: Note[]; edges: Relation[]; jobs: SummaryJob[];
+  schemaVersion: 3; id: string; title: string; documents: Paper[]; activeDocumentId?: string;
+  highlights: Highlight[]; notes: Note[]; edges: Relation[]; inkStrokes: InkStroke[]; jobs: SummaryJob[];
   pdfLayouts: PdfLayout[]; pdfParagraphs: PdfParagraph[]; pdfTranslations: PdfTranslation[]; pdfTranslationJobs: PdfTranslationJob[];
   viewport: Viewport; updatedAt: string;
 }
 export interface Preferences {
   provider: Provider; models: Record<Provider, string>; reasoningEffort: ReasoningEffort; toolbarCollapsed: boolean; pdfCollapsed: boolean; boardCollapsed: boolean;
-  split: number; lastPage: Record<string, number>;
+  boardGrid: boolean; split: number; lastPage: Record<string, number>;
 }
 export interface ProjectMeta {
   id: string; title: string; createdAt: string; updatedAt: string;
@@ -109,7 +115,7 @@ export const colors: Record<Color, string> = {
 export const uid = () => crypto.randomUUID();
 export const now = () => new Date().toISOString();
 export const emptyWorkspace = (id = 'default', title = '我的研究空間'): Workspace => ({
-  schemaVersion: 2, id, title, documents: [], highlights: [], notes: [],
+  schemaVersion: 3, id, title, documents: [], highlights: [], notes: [], inkStrokes: [],
   pdfLayouts: [], pdfParagraphs: [], pdfTranslations: [], pdfTranslationJobs: [],
   edges: [], jobs: [], viewport: { x: 35, y: 50, zoom: 0.85 }, updatedAt: now(),
 });

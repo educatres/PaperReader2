@@ -32,6 +32,15 @@ describe('portable data boundary', () => {
     const parsed = validateWorkspace(w);
     expect(JSON.stringify(parsed)).not.toContain('secret-never-export'); expect(parsed.notes).toHaveLength(1);
   });
+  it('roundtrips bounded whiteboard ink and upgrades v2 workspaces without strokes', () => {
+    const w = emptyWorkspace();
+    w.inkStrokes.push({ id: 'ink-1', color: 'blue', width: 3.2, points: [{ x: 10, y: 20, pressure: .5 }, { x: 30, y: 40 }], createdAt: now(), updatedAt: now() });
+    expect(validateWorkspace(JSON.parse(JSON.stringify(w))).inkStrokes).toEqual(w.inkStrokes);
+    const { inkStrokes: _inkStrokes, ...v2 } = w;
+    expect(validateWorkspace({ ...v2, schemaVersion: 2 }).inkStrokes).toEqual([]);
+    const invalid = structuredClone(w); invalid.inkStrokes[0].points[0].pressure = 2;
+    expect(() => validateWorkspace(invalid)).toThrow();
+  });
   it('rejects dangling relationships, duplicate IDs and invalid source anchors', () => {
     const w = emptyWorkspace(); w.notes = [manualNote(), manualNote()];
     expect(() => validateWorkspace(w)).toThrow('重複 ID');

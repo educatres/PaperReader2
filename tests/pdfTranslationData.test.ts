@@ -76,8 +76,8 @@ describe('portable paragraph translations', () => {
     w.jobs.push({ id: 'summary', documentId: 'pdf', provider: 'openai', model: 'old', chunks: [{ text: 'Evidence.', startPage: 1, endPage: 1 }], results: [null], status: 'paused', createdAt: now() });
     const old = { ...w, schemaVersion: 1 };
     const migrated = validateWorkspace(old);
-    expect(migrated.schemaVersion).toBe(2); expect(migrated.notes).toEqual(w.notes); expect(migrated.jobs).toEqual(w.jobs);
-    expect(migrated.pdfParagraphs).toEqual([]);
+    expect(migrated.schemaVersion).toBe(3); expect(migrated.notes).toEqual(w.notes); expect(migrated.jobs).toEqual(w.jobs);
+    expect(migrated.pdfParagraphs).toEqual([]); expect(migrated.inkStrokes).toEqual([]);
   });
   it('rejects cross-page/version/hash links, column overflow, duplicate records and missing parts', async () => {
     const w = await fixture();
@@ -113,7 +113,7 @@ it('upgrades a real v3 IndexedDB record and isolates new research from old-clien
   await legacy.table('workspaces').put({ ...legacyFields, schemaVersion: 1 });
   await legacy.table('documents').put({ id: 'pdf', blob: new Blob(['legacy']) }); legacy.close();
   await db.open(); const migrated = (await loadWorkspace('default'))!;
-  expect(migrated.documents).toEqual(w.documents); expect(migrated.schemaVersion).toBe(2); expect(migrated.pdfTranslationJobs).toEqual([]);
+  expect(migrated.documents).toEqual(w.documents); expect(migrated.schemaVersion).toBe(3); expect(migrated.pdfTranslationJobs).toEqual([]); expect(migrated.inkStrokes).toEqual([]);
   expect((await db.documents.get(['default', 'pdf']))!.blob.size).toBe(6);
   await legacy.open();
   await legacy.table('workspaces').put({ ...legacyFields, schemaVersion: 1, title: 'Old client overwrite' });

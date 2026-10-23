@@ -6,7 +6,7 @@ import { captureContext, isCurrentContext, getProjectId, requireProjectId, chang
 import { emptyWorkspace, now, uid, providers, reasoningEfforts, type Workspace, type Preferences, type Note, type Relation, type Highlight, type Paper, type Point, type Screenshot, type ImageAsset, type ProjectView } from './types';
 import { erasePdfHighlight, erasePdfTranslation } from './lib/pdfAnnotations';
 
-const defaultPreferences: Preferences = { provider: 'openai', models: { openai: 'gpt-6-luna', gemini: '', cgu: 'gpt-6-luna', mercuryapi: '', grok: '' }, reasoningEffort: 'medium', toolbarCollapsed: false, pdfCollapsed: false, boardCollapsed: false, split: 54, lastPage: {} };
+const defaultPreferences: Preferences = { provider: 'openai', models: { openai: 'gpt-6-luna', gemini: '', cgu: 'gpt-6-luna', mercuryapi: '', grok: '' }, reasoningEffort: 'medium', toolbarCollapsed: false, pdfCollapsed: false, boardCollapsed: false, boardGrid: false, split: 54, lastPage: {} };
 const viewKind = (route: ProjectRoute) => route.view === 'projects' ? 'main' : route.view;
 function sessionValue(key: string) { try { return JSON.parse(sessionStorage.getItem(key) || '{}'); } catch { return {}; } }
 function localViewKey(name: string, id = getProjectId(), route = useApp.getState().route) { return projectStorageKey(name + '.' + viewKind(route), id); }
@@ -18,11 +18,11 @@ function readPreferences(id?: string, route: ProjectRoute = parseRoute(), recent
   return { ...defaultPreferences, provider: providers.includes(shared.provider) ? shared.provider : 'openai',
     models: { ...defaultPreferences.models, ...Object.fromEntries(providers.filter(provider => typeof shared.models?.[provider] === 'string').map(provider => [provider, shared.models[provider]])) },
     reasoningEffort: reasoningEfforts.includes(shared.reasoningEffort) ? shared.reasoningEffort : 'medium',
-    toolbarCollapsed: p.toolbarCollapsed === true, pdfCollapsed, boardCollapsed: !pdfCollapsed && p.boardCollapsed === true,
+    toolbarCollapsed: p.toolbarCollapsed === true, pdfCollapsed, boardCollapsed: !pdfCollapsed && p.boardCollapsed === true, boardGrid: p.boardGrid === true,
     split: typeof p.split === 'number' ? Math.max(30, Math.min(75, p.split)) : 54, lastPage: p.lastPage || {} };
 }
 function readingPreferences(p: Preferences): Partial<Preferences> {
-  return { lastPage: p.lastPage, split: p.split, toolbarCollapsed: p.toolbarCollapsed, pdfCollapsed: p.pdfCollapsed, boardCollapsed: p.boardCollapsed };
+  return { lastPage: p.lastPage, split: p.split, toolbarCollapsed: p.toolbarCollapsed, pdfCollapsed: p.pdfCollapsed, boardCollapsed: p.boardCollapsed, boardGrid: p.boardGrid };
 }
 let viewTimer: ReturnType<typeof setTimeout>;
 let viewQueue: Promise<void> = Promise.resolve();
