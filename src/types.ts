@@ -99,7 +99,7 @@ export interface Workspace {
 }
 export interface Preferences {
   provider: Provider; models: Record<Provider, string>; reasoningEffort: ReasoningEffort; toolbarCollapsed: boolean; pdfCollapsed: boolean; boardCollapsed: boolean;
-  boardGrid: boolean; boardRuled: boolean; split: number; lastPage: Record<string, number>;
+  boardGrid: boolean; split: number; lastPage: Record<string, number>;
 }
 export interface ProjectMeta {
   id: string; title: string; createdAt: string; updatedAt: string;

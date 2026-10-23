@@ -4,13 +4,16 @@ export function inkPath(points: readonly InkPoint[]): string {
   if (!points.length) return '';
   if (points.length === 1) return `M ${points[0].x} ${points[0].y} l 0.01 0`;
   if (points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+  const value = (number: number) => Number(number.toFixed(2));
   let path = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 1; i < points.length - 1; i++) {
-    const next = points[i + 1];
-    path += ` Q ${points[i].x} ${points[i].y} ${(points[i].x + next.x) / 2} ${(points[i].y + next.y) / 2}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const before = points[Math.max(0, i - 1)]; const current = points[i];
+    const next = points[i + 1]; const after = points[Math.min(points.length - 1, i + 2)];
+    const first = { x: current.x + (next.x - before.x) / 6, y: current.y + (next.y - before.y) / 6 };
+    const second = { x: next.x - (after.x - current.x) / 6, y: next.y - (after.y - current.y) / 6 };
+    path += ` C ${value(first.x)} ${value(first.y)} ${value(second.x)} ${value(second.y)} ${next.x} ${next.y}`;
   }
-  const last = points[points.length - 1];
-  return `${path} L ${last.x} ${last.y}`;
+  return path;
 }
 
 export function normalizedRect(a: Point, b: Point): Quad {

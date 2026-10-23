@@ -5,7 +5,7 @@ async function draw(page: Page, from: { x: number; y: number }, to: { x: number;
   await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(to.x, to.y, { steps: 10 }); await page.mouse.up();
 }
 
-test('handwriting colors, stroke eraser, marquee selection, grid and persistence work on the research board', async ({ page }) => {
+test('smooth handwriting, colors, stroke eraser, marquee selection, grid and persistence work on the research board', async ({ page }) => {
   await openProject(page);
   const board = page.locator('.research-canvas'); const box = (await board.boundingBox())!;
   const a = { x: box.x + box.width * .35, y: box.y + box.height * .35 };
@@ -14,6 +14,7 @@ test('handwriting colors, stroke eraser, marquee selection, grid and persistence
   const d = { x: b.x + 20, y: b.y + 80 };
 
   await page.getByRole('button', { name: '手寫畫筆' }).click();
+  await expect(board).toHaveCSS('cursor', /data:image\/svg\+xml/);
   await page.getByRole('button', { name: '藍色畫筆' }).click();
   await draw(page, a, b); await draw(page, c, d);
   await expect(page.locator('[data-ink-stroke]')).toHaveCount(2);
@@ -36,13 +37,8 @@ test('handwriting colors, stroke eraser, marquee selection, grid and persistence
 
   await page.getByRole('button', { name: '開啟淡色格線' }).click();
   await expect(page.getByRole('button', { name: '關閉淡色格線' })).toHaveClass(/active/);
-  await page.getByRole('button', { name: '開啟淡色橫線' }).click();
-  await expect(page.getByRole('button', { name: '關閉淡色橫線' })).toHaveClass(/active/);
-  await expect(page.getByRole('button', { name: '開啟淡色格線' })).not.toHaveClass(/active/);
-  await expect(page.getByTestId('ruled-background')).toBeVisible();
-  await expect(page.getByTestId('ruled-background')).toHaveCSS('background-image', /d9e1d3/);
   await page.waitForTimeout(350); await page.reload();
   await expect(page.locator('[data-ink-stroke]')).toHaveCount(2);
-  await expect(page.getByRole('button', { name: '關閉淡色橫線' })).toHaveClass(/active/);
-  await expect(page.getByTestId('ruled-background')).toBeVisible();
+  await expect(page.getByRole('button', { name: '關閉淡色格線' })).toHaveClass(/active/);
+  await expect(page.getByRole('button', { name: /淡色橫線/ })).toHaveCount(0);
 });

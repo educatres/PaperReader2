@@ -6,7 +6,8 @@ const stroke: InkStroke = { id: 'stroke', color: 'black', width: 4, points: [{ x
 
 describe('whiteboard ink geometry', () => {
   it('builds a smooth SVG path and preserves dots', () => {
-    expect(inkPath(stroke.points)).toContain('Q 10 10 15 5');
+    expect(inkPath(stroke.points)).toContain('C 1.67 1.67 6.67 10 10 10');
+    expect(inkPath(stroke.points)).toContain('C 13.33 10 18.33 1.67 20 0');
     expect(inkPath([{ x: 2, y: 3 }])).toContain('M 2 3');
   });
   it('hits a whole stroke using a zoom-adjusted tolerance', () => {
