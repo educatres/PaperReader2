@@ -1,0 +1,40 @@
+標題：CGUxAI 師生 AI 協作工具分享｜PaperReader：研究生專屬的論文閱讀與知識整理工具
+英文標題：CGUxAI AI Collaboration Tools for Faculty and Students｜PaperReader: A Research Paper Reading and Knowledge Organization Tool for Graduate Students
+
+中文內文：======================
+
+"讓每一篇讀過的論文，成為研究知識的一部分"
+
+PaperReader 是專為研究生與學術研究者設計的論文閱讀與知識整理工具，免費、開源。
+https://educatres.github.io/PaperReader/
+
+一段值得留下的文獻原文，就是一張知識便條。
+
+PaperReader 讓您把論文原文、AI 分析與個人想法整理成便條，放在無邊際的知識白板上。透過自由排列與連線，串聯不同文獻的研究觀點，逐步建立屬於自己的研究脈絡與知識架構。
+PaperReader 整合 PDF 重點標記、論文截圖便條、AI 翻譯、AI 摘要與全文導讀，讓論文閱讀、重點整理與跨文獻知識整合，都能在同一個平台完成。每張便條都能回溯原始文獻，所有資料保存在您的電腦上，並支援備份，兼顧研究資料的隱私與自主性。讓閱讀不只停留在畫重點，讓每一次閱讀、每一個想法都有跡可循，逐步累積成自己的研究知識庫。
+
+本工具不限長庚師生使用，但請不要外流您的CGU AI金鑰。
+
+外校同學或校內Token用完也可使用Google提供的免費金鑰，這邊申請：https://aistudio.google.com/app/api-keys
+
+
+英文內文：======================
+
+"Turn Every Paper You Read into a Building Block of Your Research Knowledge"
+
+PaperReader** is a free, open-source tool designed for graduate students and academic researchers to read, annotate, and organize research papers.
+
+https://educatres.github.io/PaperReader/
+
+Every meaningful passage from a research paper can become a knowledge note.
+
+PaperReader allows you to turn excerpts from research papers, AI-generated insights, and your own thoughts into notes on an **infinite knowledge whiteboard**. By freely arranging and connecting these notes, you can link ideas across different papers and gradually develop your own research framework and knowledge structure.
+PaperReader integrates **PDF highlighting, screenshot-based notes, AI-powered translation, AI summarization, and full-paper overviews**, bringing paper reading, note-taking, and cross-paper knowledge integration together in one platform.
+Every note can be traced back to its original source. All data is stored locally on your computer, with backup support to protect your privacy and give you full control over your research materials.
+Go beyond simply highlighting papers. Make every reading session and every idea traceable, and gradually build your own personal research knowledge base.
+
+ Access and API Keys
+PaperReader is available to everyone, including users outside Chang Gung University (CGU).
+However, please do not share your CGU AI API key with anyone outside the university.
+Students and researchers from other institutions, as well as CGU users who have exhausted their AI token quota, can use a free API key provided by Google AI Studio.
+You can obtain a Google AI Studio API key here: https://aistudio.google.com/app/api-keys
