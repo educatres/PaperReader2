@@ -36,7 +36,12 @@ test('handwriting colors, stroke eraser, marquee selection, grid and persistence
 
   await page.getByRole('button', { name: '開啟淡色格線' }).click();
   await expect(page.getByRole('button', { name: '關閉淡色格線' })).toHaveClass(/active/);
+  await page.getByRole('button', { name: '開啟淡色橫線' }).click();
+  await expect(page.getByRole('button', { name: '關閉淡色橫線' })).toHaveClass(/active/);
+  await expect(page.getByRole('button', { name: '開啟淡色格線' })).not.toHaveClass(/active/);
+  await expect(page.getByTestId('ruled-background')).toBeVisible();
   await page.waitForTimeout(350); await page.reload();
   await expect(page.locator('[data-ink-stroke]')).toHaveCount(2);
-  await expect(page.getByRole('button', { name: '關閉淡色格線' })).toHaveClass(/active/);
+  await expect(page.getByRole('button', { name: '關閉淡色橫線' })).toHaveClass(/active/);
+  await expect(page.getByTestId('ruled-background')).toBeVisible();
 });

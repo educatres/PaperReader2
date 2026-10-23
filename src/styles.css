@@ -89,6 +89,7 @@
 
 /* Whiteboard ink shares React Flow's world coordinates while interaction stays in one lightweight SVG layer. */
 .ink-layer { position: absolute; inset: 0; z-index: 4; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
+.ruled-background { position: absolute; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(to bottom, transparent calc(100% - 1px), #d8e1d2 calc(100% - 1px)); background-repeat: repeat; }
 .ink-stroke, .ink-selection { fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .ink-selection { stroke: #4f83bd; opacity: .28; }
 .ink-draft { opacity: .9; }
