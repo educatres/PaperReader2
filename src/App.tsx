@@ -1,7 +1,7 @@
 import { ProjectsPage } from './components/ProjectsPage';
 import { beginBusyOperation, hasBusyOperation, registerEditor } from './lib/projectContext';
 import { Component, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
-import { BookOpen, ChevronDown, ChevronUp, CircleHelp, FilePlus2, FolderOpen, Download, KeyRound, ShieldCheck, Sparkles, Check, LoaderCircle, PanelLeft, X, FileText, ArrowUpRight, LockKeyhole, Trash2, HardDrive, Plus, Upload, CheckCircle2, AlertCircle, FileArchive, Braces, NotebookPen, PanelLeftOpen, PanelRightOpen, ExternalLink, Undo2, Redo2 } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, CircleHelp, FilePlus2, FolderOpen, Download, KeyRound, ShieldCheck, Sparkles, Check, LoaderCircle, PanelLeft, X, FileText, ArrowUpRight, LockKeyhole, Trash2, HardDrive, Plus, Upload, CheckCircle2, AlertCircle, FileArchive, Braces, NotebookPen, PanelLeftOpen, PanelRightOpen, ExternalLink, Undo2, Redo2, Moon, Sun } from 'lucide-react';
 import { PdfViewer } from './components/PdfViewer';
 import { ResearchCanvas } from './components/ResearchCanvas';
 import { Settings } from './components/Settings';
@@ -168,6 +168,7 @@ function AppContent() {
         <button className={`ai-settings-button ${hasKey(preferences.provider) ? 'connected' : ''}`} aria-label={hasKey(preferences.provider) ? providerName(preferences.provider) : '連接你的 AI'} onClick={() => useApp.setState({ settingsOpen: true })}><KeyRound size={15} /><span>{hasKey(preferences.provider) ? providerName(preferences.provider) : '連接你的 AI'}</span><ChevronDown size={13} /></button>
         <button className="secondary-button summary-button" aria-label="全文摘要" disabled={!workspace.documents.length || !!full} onClick={() => setSummaryOpen(true)}><Sparkles size={15} /><span>全文摘要</span></button>
         <button className="export-button" aria-label="匯出研究" onClick={() => useApp.setState({ exportOpen: true })}><Download size={16} /><span>匯出研究</span></button>
+        <button className="icon-button theme-toggle" title={preferences.theme === 'dark' ? '切換為淺色模式' : '切換為深色模式'} aria-label={preferences.theme === 'dark' ? '切換為淺色模式' : '切換為深色模式'} aria-pressed={preferences.theme === 'dark'} onClick={() => useApp.getState().pref({ theme: preferences.theme === 'dark' ? 'light' : 'dark' })}>{preferences.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button>
         <button className="icon-button help-button" title="使用指南 ?" aria-label="使用指南" onClick={() => useApp.setState({ helpOpen: true })}><CircleHelp size={19} /></button>
       </div>
     </header>
@@ -211,7 +212,27 @@ function AppContent() {
   </div>;
 }
 function Toast() { const t = useApp(s => s.toast); if (!t) return null; return <div className={`toast ${t.kind}`} role={t.kind === 'error' ? 'alert' : 'status'}>{t.kind === 'error' ? <AlertCircle size={18} /> : <Check size={18} />}<span>{t.text}</span><button className="icon-button" aria-label="關閉提示" onClick={() => useApp.setState({ toast: undefined })}><X size={15} /></button></div>; }
-export default function App() { return <ErrorBoundary><ProjectRouter /></ErrorBoundary>; }
+export default function App() { return <ErrorBoundary><ThemeSync /><ProjectRouter /></ErrorBoundary>; }
+function ThemeSync() {
+  const theme = useApp(s => s.preferences.theme);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.key !== 'PaperReader.preferences' || !event.newValue) return;
+      try {
+        const saved = JSON.parse(event.newValue);
+        const next = saved.theme === 'dark' ? 'dark' : 'light';
+        if (next !== useApp.getState().preferences.theme) useApp.setState(state => ({ preferences: { ...state.preferences, theme: next } }));
+      } catch { /* Ignore malformed settings written by another tab. */ }
+    };
+    window.addEventListener('storage', sync);
+    return () => window.removeEventListener('storage', sync);
+  }, []);
+  return null;
+}
 function ProjectRouter() {
   const { ready, route, switching, missingProject, initializationError, settingsOpen, helpOpen, deletedDraft } = useApp();
   useEffect(() => { void initialize(); }, []);

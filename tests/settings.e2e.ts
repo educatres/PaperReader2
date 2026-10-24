@@ -2,6 +2,28 @@ import { openProject } from './projectHelpers';
 import { expect, test } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
+test('dark theme stays inside the collapsible toolbar and adapts canvas ink without darkening paper', async ({ page }) => {
+  await openProject(page);
+  await page.getByRole('button', { name: '切換為深色模式', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.getByRole('button', { name: '切換為淺色模式', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: '先試讀一篇範例', exact: true }).click();
+  await expect(page.locator('.pdf-page').first()).toBeVisible();
+  await expect(page.locator('.pdf-page').first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await page.getByRole('button', { name: '新增便條', exact: true }).click();
+  await expect(page.locator('.note-card').first()).toHaveCSS('background-color', 'rgb(255, 254, 248)');
+  await page.getByRole('button', { name: '手寫畫筆', exact: true }).click();
+  await expect(page.getByRole('button', { name: '霧白畫筆', exact: true })).toHaveCSS('background-color', 'rgb(231, 239, 236)');
+  await expect(page.getByRole('button', { name: '亮藍畫筆', exact: true })).toHaveCSS('background-color', 'rgb(117, 185, 241)');
+  await expect(page.getByRole('button', { name: '薄荷綠畫筆', exact: true })).toHaveCSS('background-color', 'rgb(115, 201, 152)');
+  await expect(page.getByRole('button', { name: '珊瑚紅畫筆', exact: true })).toHaveCSS('background-color', 'rgb(255, 140, 130)');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByRole('button', { name: '隱藏工具列', exact: true }).click();
+  await expect(page.getByRole('button', { name: '切換為淺色模式', exact: true })).toBeHidden();
+  await expect(page.getByRole('button', { name: '展開工具列', exact: true })).toBeVisible();
+});
+
 test('top toolbar collapses, persists, and remains recoverable on narrow screens', async ({ page }) => {
   await openProject(page);
   await page.getByRole('button', { name: '先試讀一篇範例' }).click();

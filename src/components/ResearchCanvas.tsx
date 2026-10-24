@@ -13,7 +13,7 @@ import { registerEditor, getProjectId } from '../lib/projectContext';
 import { inkPath, normalizedRect, strokeHitsPoint, strokeIntersectsRect, translateStroke } from '../lib/ink';
 
 const nodeTypes = { researchNote: NoteNode };
-const inkColors: Record<InkColor, string> = { black: '#26322d', blue: '#316ba0', green: '#41805a', red: '#b85046' };
+const inkColors: Record<InkColor, string> = { black: 'var(--brush-black)', blue: 'var(--brush-blue)', green: 'var(--brush-green)', red: 'var(--brush-red)' };
 type InkTool = 'pan' | 'pen' | 'eraser' | 'select';
 type InkGesture =
   | { type: 'pen'; pointerId: number; points: InkPoint[] }
@@ -203,8 +203,8 @@ function CanvasInner({ onCollapse, onPopout }: CanvasProps) {
         connectionMode={ConnectionMode.Loose} deleteKeyCode={null} selectionKeyCode="Shift" multiSelectionKeyCode="Shift" panOnScroll selectionOnDrag={false}
         panOnDrag={inkTool === 'pan'} nodesDraggable={inkTool === 'pan'} nodesConnectable={inkTool === 'pan'} elementsSelectable={inkTool === 'pan'} zoomOnDoubleClick={inkTool === 'pan'}
         proOptions={{ hideAttribution: false }} aria-label="無邊際研究白板">
-        <Background variant={preferences.boardGrid ? BackgroundVariant.Lines : BackgroundVariant.Dots} gap={preferences.boardGrid ? 24 : 22} size={preferences.boardGrid ? 0.8 : 1.1} color={preferences.boardGrid ? '#d9e1d3' : '#c8d0c4'} />
-        {miniMap && <MiniMap nodeColor={n => (n as ResearchNode).data.note.type === 'group-summary' ? '#a493c5' : colors[(n as ResearchNode).data.note.color]} maskColor="rgba(237,240,232,.7)" pannable zoomable position="bottom-right" />}
+        <Background variant={preferences.boardGrid ? BackgroundVariant.Lines : BackgroundVariant.Dots} gap={preferences.boardGrid ? 24 : 22} size={preferences.boardGrid ? 0.8 : 1.1} color={preferences.theme === 'dark' ? '#415d60' : preferences.boardGrid ? '#d9e1d3' : '#c8d0c4'} />
+        {miniMap && <MiniMap nodeColor={n => (n as ResearchNode).data.note.type === 'group-summary' ? '#a493c5' : colors[(n as ResearchNode).data.note.color]} maskColor={preferences.theme === 'dark' ? 'rgba(30,43,46,.72)' : 'rgba(237,240,232,.7)'} pannable zoomable position="bottom-right" />}
       </ReactFlow>
       <svg className="ink-layer" aria-hidden="true"><g transform={`translate(${liveViewport.x} ${liveViewport.y}) scale(${liveViewport.zoom})`}>
         {drawnInk.map(stroke => <g key={stroke.id} data-ink-stroke={stroke.id}>
@@ -222,7 +222,7 @@ function CanvasInner({ onCollapse, onPopout }: CanvasProps) {
         <button className={`icon-button ${inkTool === 'select' ? 'active' : ''}`} onClick={() => chooseInkTool('select')} title="框選多筆畫" aria-label="框選多筆畫"><MousePointer2 size={16} /></button>
         <i />
         <button className={`icon-button ${preferences.boardGrid ? 'active' : ''}`} onClick={() => useApp.getState().pref({ boardGrid: !preferences.boardGrid })} title={preferences.boardGrid ? '關閉淡色格線' : '開啟淡色格線'} aria-label={preferences.boardGrid ? '關閉淡色格線' : '開啟淡色格線'}><Grid3X3 size={16} /></button>
-        {inkTool === 'pen' && <div className="ink-palette" aria-label="畫筆顏色">{(Object.keys(inkColors) as InkColor[]).map(color => <button key={color} className={inkColor === color ? 'active' : ''} style={{ '--ink-color': inkColors[color] } as CSSProperties} aria-label={`${{ black: '黑色', blue: '藍色', green: '綠色', red: '紅色' }[color]}畫筆`} title={`${{ black: '黑色', blue: '藍色', green: '綠色', red: '紅色' }[color]}畫筆`} onClick={() => setInkColor(color)} />)}</div>}
+        {inkTool === 'pen' && <div className="ink-palette" aria-label="畫筆顏色">{(Object.keys(inkColors) as InkColor[]).map(color => { const label = preferences.theme === 'dark' ? { black: '霧白', blue: '亮藍', green: '薄荷綠', red: '珊瑚紅' }[color] : { black: '炭黑', blue: '深藍', green: '深綠', red: '磚紅' }[color]; return <button key={color} className={inkColor === color ? 'active' : ''} style={{ '--ink-color': inkColors[color] } as CSSProperties} aria-label={`${label}畫筆`} title={`${label}畫筆`} onClick={() => setInkColor(color)} />; })}</div>}
       </div>
       <div className="canvas-tools"><button className="icon-button" title="復原 Ctrl+Z" aria-label="復原" disabled={!history.length} onClick={() => useApp.getState().undo()}><Undo2 size={16} /></button><button className="icon-button" title="重做 Ctrl+Shift+Z" aria-label="重做" disabled={!future.length} onClick={() => useApp.getState().redo()}><Redo2 size={16} /></button><i /><button className="icon-button" aria-label="縮小白板" onClick={() => zoomOut()}><ZoomOut size={16} /></button><button className="icon-button" aria-label="放大白板" onClick={() => zoomIn()}><ZoomIn size={16} /></button><button className="icon-button" aria-label="白板全貌" title="回到全貌" onClick={fitBoard}><Maximize size={16} /></button><i /><button className={`icon-button ${miniMap ? 'active' : ''}`} aria-label="切換小地圖" onClick={() => setMiniMap(!miniMap)}><Map size={16} /></button></div>
       <span className="canvas-hint">{inkTool === 'pan' ? 'Shift 多選 · 拖曳連接點建立關係' : inkTool === 'pen' ? '拖曳書寫 · 可使用滑鼠或觸控筆' : inkTool === 'eraser' ? '碰觸筆畫即可整筆擦除' : `${selectedInk.size ? `已選 ${selectedInk.size} 筆 · 拖曳移動 · Delete 刪除` : '拖曳框選多筆畫'}`}</span>
