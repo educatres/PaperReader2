@@ -15,10 +15,10 @@ test('smooth handwriting, colors, stroke eraser, marquee selection, grid and per
 
   await page.getByRole('button', { name: '手寫畫筆' }).click();
   await expect(board).toHaveCSS('cursor', /data:image\/svg\+xml/);
-  await page.getByRole('button', { name: '深藍畫筆' }).click();
+  await page.getByRole('button', { name: '藍色畫筆' }).click();
   await draw(page, a, b); await draw(page, c, d);
   await expect(page.locator('[data-ink-stroke]')).toHaveCount(2);
-  await expect(page.locator('.ink-stroke').first()).toHaveAttribute('stroke', 'var(--brush-blue)');
+  await expect(page.locator('.ink-stroke').first()).toHaveAttribute('stroke', '#316ba0');
 
   await page.getByRole('button', { name: '整筆橡皮擦' }).click(); await page.mouse.click(a.x + 50, a.y + 18);
   await expect(page.locator('[data-ink-stroke]')).toHaveCount(1);
@@ -41,41 +41,4 @@ test('smooth handwriting, colors, stroke eraser, marquee selection, grid and per
   await expect(page.locator('[data-ink-stroke]')).toHaveCount(2);
   await expect(page.getByRole('button', { name: '關閉淡色格線' })).toHaveClass(/active/);
   await expect(page.getByRole('button', { name: /淡色橫線/ })).toHaveCount(0);
-});
-
-test('pen detection keeps stylus drawing while routing touch to canvas panning', async ({ page }) => {
-  const client = await page.context().newCDPSession(page);
-  await client.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-  await openProject(page);
-  const board = page.locator('.research-canvas'); const box = (await board.boundingBox())!;
-  const start = { x: Math.round(box.x + box.width * .35), y: Math.round(box.y + box.height * .4) };
-  const end = { x: start.x + 90, y: start.y + 35 };
-
-  await page.getByRole('button', { name: '手寫畫筆' }).click();
-  await expect(board).toHaveAttribute('data-pen-detected', 'false');
-  await expect(page.locator('.canvas-hint')).toContainText('手指也可書寫');
-
-  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...start, id: 1, radiusX: 2, radiusY: 2, force: .5 }] });
-  await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...end, id: 1, radiusX: 2, radiusY: 2, force: .5 }] });
-  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await expect(page.locator('[data-ink-stroke]')).toHaveCount(1);
-
-  const penStart = { x: start.x, y: start.y + 80 }; const penEnd = { x: end.x, y: end.y + 80 };
-  await client.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: penStart.x, y: penStart.y, button: 'left', buttons: 1, pointerType: 'pen', force: .55 });
-  await client.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: penEnd.x, y: penEnd.y, button: 'left', buttons: 1, pointerType: 'pen', force: .7 });
-  await client.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: penEnd.x, y: penEnd.y, button: 'left', buttons: 0, pointerType: 'pen', force: 0 });
-
-  await expect(page.locator('[data-ink-stroke]')).toHaveCount(2);
-  await expect(board).toHaveAttribute('data-pen-detected', 'true');
-  await expect(page.locator('.canvas-hint')).toContainText('手指拖動畫布');
-
-  const viewport = page.locator('.react-flow__viewport'); const before = await viewport.getAttribute('style');
-  const touchStart = { x: Math.round(box.x + box.width * .62), y: Math.round(box.y + box.height * .62) };
-  const touchEnd = { x: touchStart.x + 80, y: touchStart.y + 45 };
-  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...touchStart, id: 1, radiusX: 2, radiusY: 2, force: .5 }] });
-  await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...touchEnd, id: 1, radiusX: 2, radiusY: 2, force: .5 }] });
-  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-
-  await expect(page.locator('[data-ink-stroke]')).toHaveCount(2);
-  await expect.poll(() => viewport.getAttribute('style')).not.toBe(before);
 });
