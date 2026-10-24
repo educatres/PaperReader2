@@ -46,6 +46,7 @@ function CanvasInner({ onCollapse, onPopout }: CanvasProps) {
   const [miniMap, setMiniMap] = useState(false); const [editEdgeId, setEditEdgeId] = useState<string>();
   const [selectedEdges, setSelectedEdges] = useState<string[]>([]); const [showHidden, setShowHidden] = useState(false);
   const [inkTool, setInkTool] = useState<InkTool>('pan'); const [inkColor, setInkColor] = useState<InkColor>('black');
+  const [penDetected, setPenDetected] = useState(false); const penDetectedRef = useRef(false);
   const [selectedInk, setSelectedInk] = useState<Set<string>>(new Set()); const gesture = useRef<InkGesture | undefined>(undefined); const [, redrawInk] = useState(0);
   const { fitBounds, getNodesBounds, zoomIn, zoomOut, setCenter, getNode, screenToFlowPosition, getViewport } = useReactFlow<ResearchNode>();
   const liveViewport = useViewport();
@@ -97,12 +98,22 @@ function CanvasInner({ onCollapse, onPopout }: CanvasProps) {
     const point = screenToFlowPosition({ x: e.clientX, y: e.clientY });
     return { ...point, ...(e.pointerType === 'pen' && e.pressure > 0 ? { pressure: e.pressure } : {}) };
   }
+  function detectPen(e: ReactPointerEvent<HTMLDivElement>) {
+    if (e.pointerType !== 'pen' || penDetectedRef.current) return;
+    penDetectedRef.current = true; setPenDetected(true);
+  }
   function strokeAt(point: Point) {
     const moving = gesture.current?.type === 'move' ? gesture.current : undefined;
     return [...workspace.inkStrokes].reverse().find(stroke => strokeHitsPoint(moving?.ids.has(stroke.id) ? translateStroke(stroke, moving.delta) : stroke, point, 7 / liveViewport.zoom));
   }
   function startInk(e: ReactPointerEvent<HTMLDivElement>) {
+    detectPen(e);
+    if (inkTool === 'pen' && e.pointerType === 'touch' && penDetectedRef.current) {
+      if (gesture.current) { e.preventDefault(); e.stopPropagation(); }
+      return;
+    }
     if (inkTool === 'pan' || e.button !== 0 || (e.target as Element).closest('.canvas-tools, .ink-toolbar')) return;
+    if (gesture.current) { e.preventDefault(); e.stopPropagation(); return; }
     e.preventDefault(); e.stopPropagation(); e.currentTarget.focus(); e.currentTarget.setPointerCapture(e.pointerId);
     const point = pointerPoint(e);
     if (inkTool === 'pen') gesture.current = { type: 'pen', pointerId: e.pointerId, points: [point] };
@@ -191,7 +202,7 @@ function CanvasInner({ onCollapse, onPopout }: CanvasProps) {
       <div className="board-pane-tools">{onPopout && <button className="icon-button" title="在新視窗開啟白板" aria-label="在新視窗開啟白板" onClick={() => onPopout(getViewport())}><ExternalLink size={16} /></button>}{onCollapse && <button className="icon-button" title="隱藏知識白板" aria-label="隱藏知識白板" onClick={() => { saveViewport(getViewport()); onCollapse(); }}><PanelRightClose size={17} /></button>}</div>
     </div></div>
     {groupTask && <div className="group-ai-progress" role="status"><LoaderCircle size={15} className="spin" /><span>正在整合 {groupTask.sourceCount} 張關聯便條…</span><button onClick={() => cancelTask(groupTask.taskId)}>取消整合</button></div>}
-    <div className={`research-canvas ink-tool-${inkTool}`} onPointerDownCapture={startInk} onPointerMoveCapture={moveInk} onPointerUpCapture={finishInk} onPointerCancelCapture={finishInk}
+    <div className={`research-canvas ink-tool-${inkTool}`} data-pen-detected={penDetected ? 'true' : 'false'} onPointerOverCapture={detectPen} onPointerDownCapture={startInk} onPointerMoveCapture={moveInk} onPointerUpCapture={finishInk} onPointerCancelCapture={finishInk}
       onKeyDown={e => { const tag = (e.target as HTMLElement).tagName; if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || (e.target as HTMLElement).isContentEditable) return; if (e.key === 'Escape') { cancelInkGesture(); setSelectedInk(new Set()); } else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelection(); } }} tabIndex={0}>
       <ReactFlow<ResearchNode> nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={connect}
         onNodeClick={(_, n) => useApp.setState({ selectedNoteId: n.id })} onPaneClick={() => { useApp.setState({ selectedNoteId: undefined }); setSelectedEdges([]); setNodes(n => n.map(x => ({ ...x, selected: false }))); }}
@@ -201,7 +212,7 @@ function CanvasInner({ onCollapse, onPopout }: CanvasProps) {
         onNodeDragStart={() => useApp.setState({ focusNoteId: undefined })}
         onMoveEnd={(_, vp) => saveViewport(vp)} defaultViewport={workspace.viewport} minZoom={0.2} maxZoom={1.8}
         connectionMode={ConnectionMode.Loose} deleteKeyCode={null} selectionKeyCode="Shift" multiSelectionKeyCode="Shift" panOnScroll selectionOnDrag={false}
-        panOnDrag={inkTool === 'pan'} nodesDraggable={inkTool === 'pan'} nodesConnectable={inkTool === 'pan'} elementsSelectable={inkTool === 'pan'} zoomOnDoubleClick={inkTool === 'pan'}
+        panOnDrag={inkTool === 'pan' || (inkTool === 'pen' && penDetected)} nodesDraggable={inkTool === 'pan'} nodesConnectable={inkTool === 'pan'} elementsSelectable={inkTool === 'pan'} zoomOnDoubleClick={inkTool === 'pan'}
         proOptions={{ hideAttribution: false }} aria-label="無邊際研究白板">
         <Background variant={preferences.boardGrid ? BackgroundVariant.Lines : BackgroundVariant.Dots} gap={preferences.boardGrid ? 24 : 22} size={preferences.boardGrid ? 0.8 : 1.1} color={preferences.theme === 'dark' ? '#415d60' : preferences.boardGrid ? '#d9e1d3' : '#c8d0c4'} />
         {miniMap && <MiniMap nodeColor={n => (n as ResearchNode).data.note.type === 'group-summary' ? '#a493c5' : colors[(n as ResearchNode).data.note.color]} maskColor={preferences.theme === 'dark' ? 'rgba(30,43,46,.72)' : 'rgba(237,240,232,.7)'} pannable zoomable position="bottom-right" />}
@@ -225,7 +236,7 @@ function CanvasInner({ onCollapse, onPopout }: CanvasProps) {
         {inkTool === 'pen' && <div className="ink-palette" aria-label="畫筆顏色">{(Object.keys(inkColors) as InkColor[]).map(color => { const label = preferences.theme === 'dark' ? { black: '霧白', blue: '亮藍', green: '薄荷綠', red: '珊瑚紅' }[color] : { black: '炭黑', blue: '深藍', green: '深綠', red: '磚紅' }[color]; return <button key={color} className={inkColor === color ? 'active' : ''} style={{ '--ink-color': inkColors[color] } as CSSProperties} aria-label={`${label}畫筆`} title={`${label}畫筆`} onClick={() => setInkColor(color)} />; })}</div>}
       </div>
       <div className="canvas-tools"><button className="icon-button" title="復原 Ctrl+Z" aria-label="復原" disabled={!history.length} onClick={() => useApp.getState().undo()}><Undo2 size={16} /></button><button className="icon-button" title="重做 Ctrl+Shift+Z" aria-label="重做" disabled={!future.length} onClick={() => useApp.getState().redo()}><Redo2 size={16} /></button><i /><button className="icon-button" aria-label="縮小白板" onClick={() => zoomOut()}><ZoomOut size={16} /></button><button className="icon-button" aria-label="放大白板" onClick={() => zoomIn()}><ZoomIn size={16} /></button><button className="icon-button" aria-label="白板全貌" title="回到全貌" onClick={fitBoard}><Maximize size={16} /></button><i /><button className={`icon-button ${miniMap ? 'active' : ''}`} aria-label="切換小地圖" onClick={() => setMiniMap(!miniMap)}><Map size={16} /></button></div>
-      <span className="canvas-hint">{inkTool === 'pan' ? 'Shift 多選 · 拖曳連接點建立關係' : inkTool === 'pen' ? '拖曳書寫 · 可使用滑鼠或觸控筆' : inkTool === 'eraser' ? '碰觸筆畫即可整筆擦除' : `${selectedInk.size ? `已選 ${selectedInk.size} 筆 · 拖曳移動 · Delete 刪除` : '拖曳框選多筆畫'}`}</span>
+      <span className="canvas-hint" aria-live="polite">{inkTool === 'pan' ? 'Shift 多選 · 拖曳連接點建立關係' : inkTool === 'pen' ? penDetected ? '已偵測觸控筆 · 筆書寫 · 手指拖動畫布 · 雙指縮放' : '拖曳書寫 · 手指也可書寫 · 偵測到觸控筆後手指改為拖移' : inkTool === 'eraser' ? '碰觸筆畫即可整筆擦除' : `${selectedInk.size ? `已選 ${selectedInk.size} 筆 · 拖曳移動 · Delete 刪除` : '拖曳框選多筆畫'}`}</span>
     </div>
     {editEdge && <EdgeEditor key={editEdge.id} edge={editEdge} close={() => setEditEdgeId(undefined)} />}
     {groupSummaryAnchorId && <GroupSummaryDialog anchorId={groupSummaryAnchorId} close={() => useApp.setState({ groupSummaryAnchorId: undefined })} />}
